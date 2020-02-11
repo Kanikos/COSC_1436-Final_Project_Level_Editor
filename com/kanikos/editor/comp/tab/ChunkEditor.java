@@ -23,17 +23,19 @@ import javax.swing.JPanel;
 import javax.swing.JMenu;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import com.kanikos.editor.comp.Viewer;
-import com.kanikos.game.graphics.Sprite;
-import com.kanikos.game.graphics.Spritesheet;
-import com.kanikos.game.level.Chunk;
-import com.kanikos.game.level.Tile;
-import com.kanikos.game.serial.Deserializer;
-import com.kanikos.game.serial.Serializer;
-import com.kanikos.game.util.Coordinate;
-import com.kanikos.game.util.Palette;
+import com.kanikos.editor.graphics.Sprite;
+import com.kanikos.editor.graphics.Spritesheet;
+import com.kanikos.editor.level.Chunk;
+import com.kanikos.editor.level.Tile;
+import com.kanikos.editor.serial.Deserializer;
+import com.kanikos.editor.serial.Serializer;
+import com.kanikos.editor.util.Coordinate;
+import com.kanikos.editor.util.Palette;
 
 public class ChunkEditor extends Tab {
 	private static final long serialVersionUID = 2994596565165783465L;
+	
+	// TODO - rewrite this class
 	
 	// chunk variables
 	private Chunk chunk = new Chunk();
@@ -45,9 +47,14 @@ public class ChunkEditor extends Tab {
 	private JMenuItem file_saveChunk;
 	private JMenuItem file_loadChunk;
 	
+	private JMenuItem edit_clearChunk;
+	
+	// editor controls
+	private JButton clearButton;
+	
 	// sprite selection variables
 	private Spritesheet spritesheet;
-	private short selectedSprite = 0;
+	private Tile tile = new Tile();
 	
 	private JPanel scrollPanel;
 	private JButton[] spriteButtons;
@@ -66,16 +73,7 @@ public class ChunkEditor extends Tab {
 		// set up chunk editor
 		externalViewer.setResolution(Chunk.WIDTH * Sprite.DIMENSIONS, Chunk.HEIGHT * Sprite.DIMENSIONS);
 		
-		for(int y = 0; y < Chunk.HEIGHT * Sprite.DIMENSIONS; y++) {
-			int tileY = y % Sprite.DIMENSIONS; 
-			
-			for(int x = 0; x < Chunk.WIDTH * Sprite.DIMENSIONS; x++) {
-				int tileX = x % Sprite.DIMENSIONS;
-				
-				externalViewer.pixels[(y * (Chunk.WIDTH * Sprite.DIMENSIONS)) + x] = (tileX == 0 || tileY == 0) ? 0xFFFF00FF : 0xFF000000;
-			}
-		}
-		
+		chunk.render(spritesheet, externalViewer.pixels, Chunk.WIDTH * Sprite.DIMENSIONS);
 		externalViewer.repaint();
 		
 		// row 0 - Menu Bar
@@ -91,16 +89,28 @@ public class ChunkEditor extends Tab {
 		file_saveChunk = createMenuItem(fileMenu, "Save Chunk");
 		file_loadChunk = createMenuItem(fileMenu, "Load Chunk");
 		
-		// row 1 ~ 2 - sprite information
+		JMenu editMenu = new JMenu("Edit");
+		menuBar.add(editMenu);
+		
+		edit_clearChunk = createMenuItem(editMenu, "Clear Chunk");
+		
+		// row 1 ~ 3 - sprite information
 		// col 0 - sprite preview
-		setConstraints(INSETS_05, 0, 1, 1, 2, 1D, 0D, GridBagConstraints.NONE);
+		setConstraints(INSETS_05, 0, 1, 1, 3, 1D, 0D, GridBagConstraints.NONE);
 		
 		spritePreview = new Viewer(16, 16, 200, 200);
 		add(spritePreview, CONSTRAINTS);
 		
-		// row 1
-		// col 1 ~ 4 - properties boxes
+		// row 1:
+		// col 1 ~ 4 editor controls
 		setConstraints(INSETS_05, 0, 1, 1, 1, 1D, 0D, GridBagConstraints.NONE);
+		
+		CONSTRAINTS.gridx = 1;
+		clearButton = createButton(this, "Clear Button");
+		
+		// row 2
+		// col 1 ~ 4 - properties boxes
+		setConstraints(INSETS_05, 0, 2, 1, 1, 1D, 0D, GridBagConstraints.NONE);
 		
 		CONSTRAINTS.gridx = 1;
 		prop_solid = createCheckBox(this, "Solid");
@@ -114,9 +124,9 @@ public class ChunkEditor extends Tab {
 		CONSTRAINTS.gridx = 4;
 		prop_flipD = createCheckBox(this, "Flip D"); 
 		
-		// row 2:
+		// row 3:
 		// col 1 ~ 4 - color palette buttons
-		setConstraints(INSETS_05, 0, 2, 1, 1, 1D, 0D, GridBagConstraints.NONE);
+		setConstraints(INSETS_05, 0, 3, 1, 1, 1D, 0D, GridBagConstraints.NONE);
 		
 		colorPalettePreview = new BufferedImage[4];
 		colorPaletteButtons = new JButton[4];
@@ -128,8 +138,8 @@ public class ChunkEditor extends Tab {
 			colorPaletteButtons[i] = createButton(this, colorPalettePreview[i]);
 		}
 		
-		// row 3 - sprite selector pane
-		setConstraints(INSETS_00, 0, 3, 5, 1, 1D, 1D, GridBagConstraints.BOTH);
+		// row 4 - sprite selector pane
+		setConstraints(INSETS_00, 0, 4, 5, 1, 1D, 1D, GridBagConstraints.BOTH);
 		
 		scrollPanel = new JPanel();
 		scrollPanel.setBackground(Color.BLACK);
@@ -175,7 +185,7 @@ public class ChunkEditor extends Tab {
 		image.flush();
 		
 		int[] pixels = ((DataBufferInt) image.getRaster().getDataBuffer()).getData();
-		sprite.render(chunk.palette, pixels, Sprite.DIMENSIONS, selectedSprite, 0, 0);
+		sprite.render(chunk.palette, pixels, Sprite.DIMENSIONS, tile, 0, 0);
 		
 		// scale the image;
 		Image scaledImage = image.getScaledInstance(image.getWidth() * scale, image.getHeight() * scale, Image.SCALE_REPLICATE);
@@ -195,6 +205,15 @@ public class ChunkEditor extends Tab {
 		panelContainer.add(button, CONSTRAINTS);
 		
 		return button;
+	}
+	
+	private JButton createButton(JPanel panelContainer, String label) {
+		JButton button = new JButton(label);
+		button.addActionListener(container);
+		
+		panelContainer.add(button, CONSTRAINTS);
+		return button;
+		
 	}
 	
 	private BufferedImage createSolidImage(int dimensions, int color) {
@@ -230,7 +249,7 @@ public class ChunkEditor extends Tab {
 	
 	private void updatePallet(int index, int color) {
 		if(chunk.palette.getColor(index) != color) {
-			chunk.palette.changeColor(index, color);
+			chunk.palette.setColor(index, color);
 		}
 		
 		
@@ -244,7 +263,9 @@ public class ChunkEditor extends Tab {
 	}
 	
 	private void updatePreview() {
-		spritesheet.SPRITES[selectedSprite & 0xFF].render(chunk.palette, spritePreview.pixels, Sprite.DIMENSIONS, selectedSprite, 0, 0);
+		Sprite sprite = spritesheet.getSprite(tile.getID());
+		sprite.render(chunk.palette, spritePreview.pixels, Sprite.DIMENSIONS, tile, 0, 0);
+		
 		spritePreview.repaint();
 	}
 	
@@ -263,15 +284,21 @@ public class ChunkEditor extends Tab {
 				return;
 			}
 			
-			coordinate.x -= (coordinate.x % Sprite.DIMENSIONS);
-			coordinate.y -= (coordinate.y % Sprite.DIMENSIONS);
+			coordinate.x /= Sprite.DIMENSIONS;
+			coordinate.y /= Sprite.DIMENSIONS;
 			
-			if(!chunk.isEmptyAt(coordinate, selectedSprite)) {
+			Tile coordinateTile = chunk.getTile(coordinate.x, coordinate.y);
+			if(tile.equals(coordinateTile)) {
 				return;
 			}
 			
-			chunk.setTile(coordinate, selectedSprite);
-			spritesheet.SPRITES[selectedSprite & 0xFF].render(chunk.palette, externalViewer.pixels, Chunk.WIDTH * Sprite.DIMENSIONS, selectedSprite, coordinate.x, coordinate.y);
+			chunk.setTile(tile, coordinate.x, coordinate.y);
+			
+			coordinate.x *= Sprite.DIMENSIONS;
+			coordinate.y *= Sprite.DIMENSIONS;
+			
+			Sprite sprite = spritesheet.getSprite(tile.getID());
+			sprite.render(chunk.palette, externalViewer.pixels, Chunk.WIDTH * Sprite.DIMENSIONS, tile, coordinate.x, coordinate.y);
 			externalViewer.repaint();
 		}
 	}
@@ -282,18 +309,17 @@ public class ChunkEditor extends Tab {
 	
 	public void actionPerformed(ActionEvent e) {
 		Object src = e.getSource();
-		
 		if(src == prop_solid) {
-			selectedSprite ^= Tile.FLAG_SOLID;
+			tile.flipFlag(Tile.FLAG_SOLID);
 		}
 		else if(src == prop_flipX) {
-			selectedSprite ^= Tile.FLAG_FLIPX;
+			tile.flipFlag(Tile.FLAG_FLIPX);
 		}
 		else if(src == prop_flipY) {
-			selectedSprite ^= Tile.FLAG_FLIPY;
+			tile.flipFlag(Tile.FLAG_FLIPY);
 		}
 		else if(src == prop_flipD) {
-			selectedSprite ^= Tile.FLAG_FLIPD;
+			tile.flipFlag(Tile.FLAG_FLIPD);
 		}
 		else {
 			if(spritesheet == null) {
@@ -305,10 +331,10 @@ public class ChunkEditor extends Tab {
 					}
 					
 					spritesheet = new Spritesheet(file.getAbsolutePath());
-					spriteButtons = new JButton[spritesheet.WIDTH * spritesheet.HEIGHT];
+					spriteButtons = new JButton[spritesheet.getLength()];
 					
-					for(int i = 0; i < spritesheet.SPRITES.length; i++) {
-						spriteButtons[i] = createButton(scrollPanel, spritesheet.SPRITES[i], 3);
+					for(int i = 0; i < spritesheet.getLength(); i++) {
+						spriteButtons[i] = createButton(scrollPanel, spritesheet.getSprite(i), 3);
 					}
 					
 					scrollPanel.revalidate();
@@ -334,7 +360,8 @@ public class ChunkEditor extends Tab {
 					}
 					
 					Deserializer deserializer = new Deserializer(file.getAbsolutePath());
-					chunk = new Chunk(deserializer);
+					chunk = new Chunk();
+					chunk.deserialize(deserializer);
 					
 					for(int i = 0; i < 4; i++) {
 						updatePallet(i, chunk.palette.getColor(i));
@@ -356,8 +383,7 @@ public class ChunkEditor extends Tab {
 					
 					for(short i = 0; i < spriteButtons.length; i++) {
 						if(src == spriteButtons[i]) {
-							selectedSprite &= 0xFF00;
-							selectedSprite |= i;
+							tile.setID(i);
 							break;
 						}
 					}

@@ -6,7 +6,7 @@ import java.awt.Dimension;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
 import javax.swing.JPanel;
-import com.kanikos.game.util.Coordinate;
+import com.kanikos.editor.util.Coordinate;
 
 public class Viewer extends JPanel {
 	private static final long serialVersionUID = -2978293310911041984L;

@@ -29,7 +29,6 @@ public class Tile {
 	}
 	
 	public void flipFlag(short flag) {
-		flag &= 0xFF00;
 		serializedForm ^= flag;
 	}
 	
@@ -38,7 +37,7 @@ public class Tile {
 	}
 	
 	public short getID() {
-		return serializedForm &= 0xFF;
+		return (short) (serializedForm & 0xFF);
 	}
 	
 	// wrappers

@@ -12,6 +12,10 @@ public class Coordinate {
 		this.y = y;
 	}
 	
+	public boolean isOutOfBounds() {
+		return (x < 0 || y < 0);
+	}
+	
 	public String toString() {
 		return String.format("X: %03d\tY: %03d", x, y);
 	}

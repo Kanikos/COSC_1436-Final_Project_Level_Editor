@@ -1,7 +1,9 @@
 package com.kanikos.editor.graphics;
 
 import java.awt.image.BufferedImage;
+
 import javax.swing.ImageIcon;
+
 import com.kanikos.editor.level.Tile;
 import com.kanikos.editor.util.Palette;
 
@@ -68,8 +70,9 @@ public class Sprite {
 		}
 	}
 	
-	public BufferedImage toBufferedImage(int scale) {
+	public ImageIcon toImageIcon(int scale) {
 		int scaledDimensions = DIMENSIONS * scale;
+		
 		BufferedImage image = new BufferedImage(scaledDimensions, scaledDimensions, BufferedImage.TYPE_INT_RGB);
 		image.flush();
 		
@@ -79,10 +82,6 @@ public class Sprite {
 			}
 		}
 		
-		return image;
-	}
-	
-	public ImageIcon toImageIcon(int scale) {
-		return new ImageIcon(toBufferedImage(scale));
+		return new ImageIcon(image);
 	}
 }

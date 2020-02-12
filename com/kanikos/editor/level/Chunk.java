@@ -36,7 +36,8 @@ public class Chunk {
 		}
 	}
 	
-	public void deserialize(Deserializer deserializer) {
+	public void deserialize(String path) {
+		Deserializer deserializer = new Deserializer(path);
 		palette.deserialize(deserializer);
 		
 		for(int i = 0; i < COUNT; i++) {
@@ -47,12 +48,15 @@ public class Chunk {
 		}
 	}
 	
-	public void serialize(Serializer serializer) {
+	public void serialize(String path) {
+		Serializer serializer = new Serializer();
 		palette.serialize(serializer);
 		
 		for(int i = 0; i < COUNT; i++) {
 			tiles[i].serialize(serializer);
 		}
+		
+		serializer.saveTo(path);
 	}
 
 	public void setTile(Tile tile, int x, int y) {

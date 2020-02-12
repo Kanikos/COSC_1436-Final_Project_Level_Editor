@@ -24,12 +24,18 @@ import com.kanikos.editor.graphics.Sprite;
 import com.kanikos.editor.graphics.Spritesheet;
 import com.kanikos.editor.level.Chunk;
 import com.kanikos.editor.level.Tile;
+import com.kanikos.editor.util.Coordinate;
 import com.kanikos.editor.util.Palette;
 
 public class ChunkEditor extends Tab {
+	private static final long serialVersionUID = -6769148499005278867L;
+
 	// menu items
 	private JMenuItem
-		file_loadSpritesheet
+		file_loadSpritesheet,
+		
+		file_saveChunk,
+		file_loadChunk
 	;
 	
 	// level editor variables
@@ -60,7 +66,7 @@ public class ChunkEditor extends Tab {
 		chunk = new Chunk();
 		tile = new Tile();
 		
-		chunk.render(spritesheet, externalViewer.pixels, width);
+		updateChunk();
 		
 		/* row 0: toolbars */
 		setConstraints(INSETS_00, 0, 0, 1, 1, 1D, 0, GridBagConstraints.HORIZONTAL);
@@ -78,6 +84,16 @@ public class ChunkEditor extends Tab {
 		file_loadSpritesheet = new JMenuItem("Load Spritesheet");
 		file_loadSpritesheet.addActionListener(parent);
 		fileMenu.add(file_loadSpritesheet);
+		
+		fileMenu.addSeparator();
+		
+		file_saveChunk = new JMenuItem("Save Chunk");
+		file_saveChunk.addActionListener(parent);
+		fileMenu.add(file_saveChunk);
+		
+		file_loadChunk = new JMenuItem("Load Chunk");
+		file_loadChunk.addActionListener(parent);
+		fileMenu.add(file_loadChunk);
 		
 		/* row 2: sprite preview and info panel */
 		CONSTRAINTS.gridy = 1;
@@ -99,6 +115,8 @@ public class ChunkEditor extends Tab {
 		// shows the current selected sprite with its current properties
 		spritePreview = new Viewer(16, 16, 200, 200);
 		spriteInfo.add(spritePreview, constraints);
+		
+		updatePreview();
 		
 		// properties buttons
 		constraints.gridheight = 1;
@@ -171,8 +189,25 @@ public class ChunkEditor extends Tab {
 		return null;
 	}
 	
+	private void updatePalette() {
+		for(int i = 0; i < Palette.LIMIT; i++) {
+			paletteButtons[i].setIcon(chunk.palette.toImageIcon(i, 32));
+			paletteButtons[i].repaint();
+		}
+	}
+	
+	private void updateChunk() {
+		chunk.render(spritesheet, externalViewer.pixels, width);
+		externalViewer.repaint();
+	}
+	
 	private void updatePreview() {
-		spritesheet.getSprite(tile.getID()).render(chunk.palette, spritePreview.pixels, Sprite.DIMENSIONS, tile, 0, 0);
+		if(spritesheet == null) {
+			Spritesheet.NULL_SPRITE.render(spritePreview.pixels, Sprite.DIMENSIONS, 0, 0);
+		}
+		else {
+			spritesheet.getSprite(tile.getID()).render(chunk.palette, spritePreview.pixels, Sprite.DIMENSIONS, tile, 0, 0);
+		}
 		spritePreview.repaint();
 	}
 	
@@ -183,10 +218,29 @@ public class ChunkEditor extends Tab {
 	
 	public void mousePressed(MouseEvent e) {
 		Object src = e.getSource();
+		
+		if(spritesheet != null) {
+			Coordinate coordinate = externalViewer.getCoordinate(e.getX(), e.getY());
+			
+			if(coordinate == null) {
+				return;
+			}
+			
+			coordinate.x /= Sprite.DIMENSIONS;
+			coordinate.y /= Sprite.DIMENSIONS;
+			
+			if(tile.equals(chunk.getTile(coordinate.x, coordinate.y))) {
+				return;
+			}
+			
+			chunk.setTile(tile, coordinate.x, coordinate.y);
+		}
+		
+		updateChunk();
 	}
 	
 	public void mouseDragged(MouseEvent e) {
-		Object src = e.getSource();
+		mousePressed(e);
 	}
 	
 	public void actionPerformed(ActionEvent e) {
@@ -213,10 +267,41 @@ public class ChunkEditor extends Tab {
 			
 			scrollPanel.revalidate();
 		}
-		else {
+		else if(spritesheet != null && src == file_saveChunk) {
+			File file = browseForFile(SAVE_FILE_DIALOG);
+			
+			if(file == null) {
+				return;
+			}
+			
+			chunk.serialize(file.getAbsolutePath());
+		}
+		else if(spritesheet != null && src == file_loadChunk) {
+			File file = browseForFile(OPEN_FILE_DIALOG);
+			
+			if(file == null) {
+				return;
+			}
+			
+			chunk.deserialize(file.getAbsolutePath());
+			updatePalette();
+		}
+		else if(src == prop_solid) {
+			tile.flipFlag(Tile.FLAG_SOLID);
+		}
+		else if(src == prop_flipX) {
+			tile.flipFlag(Tile.FLAG_FLIPX);
+		}
+		else if(src == prop_flipY) {
+			tile.flipFlag(Tile.FLAG_FLIPY);
+		}
+		else if(src == prop_flipD) {
+			tile.flipFlag(Tile.FLAG_FLIPD);
+		}
+		else if(paletteButtons != null) {
 			for(int i = 0; i < paletteButtons.length; i++) {
 				if(src == paletteButtons[i]) {
-					Color selectedColor = JColorChooser.showDialog(null, "Choose Color", new Color(chunk.palette.getColor(i)), false);
+					Color selectedColor = JColorChooser.showDialog(null, "Choose Color", new Color(chunk.palette.getColor(i)));
 					
 					if(selectedColor == null) {
 						return;
@@ -227,7 +312,16 @@ public class ChunkEditor extends Tab {
 				}
 			}
 		}
+		else if(spriteButtons != null) {
+			for(int i = 0; i < spriteButtons.length; i++) {
+				if(src == spriteButtons[i]) {
+					tile.setID((short) i);
+					break;
+				}
+			}
+		}
 		
+		updateChunk();
 		updatePreview();
 	}
 }

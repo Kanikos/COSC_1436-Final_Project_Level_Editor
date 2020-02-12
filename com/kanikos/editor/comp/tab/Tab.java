@@ -21,7 +21,7 @@ public abstract class Tab extends JPanel {
 	protected static final GridBagConstraints CONSTRAINTS = new GridBagConstraints();
 	protected static final Dimension DIMENSIONS = new Dimension(560, 720);
 	
-	public static ControlPanel container;
+	public static ControlPanel parent;
 	public static Viewer externalViewer;
 	
 	public final String NAME;

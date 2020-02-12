@@ -21,7 +21,7 @@ public class ControlPanel extends JTabbedPane implements KeyListener, MouseListe
 		externalViewer.addMouseMotionListener(this);
 		
 		// Tab class setup
-		Tab.container = this;
+		Tab.parent = this;
 		Tab.externalViewer = externalViewer;
 		
 		// level editor

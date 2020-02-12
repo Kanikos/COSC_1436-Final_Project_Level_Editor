@@ -11,7 +11,7 @@ public class Tile {
 		FLAG_SOLID = (short) 0b00001000_00000000
 	;
 	
-	private short serializedForm = 0;
+	private short serializedForm = 1;
 	
 	public void deserialize(Deserializer deserializer) {
 		serializedForm = deserializer.readShort();

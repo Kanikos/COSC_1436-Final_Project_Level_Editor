@@ -1,5 +1,9 @@
 package com.kanikos.editor.util;
 
+import java.awt.image.BufferedImage;
+
+import javax.swing.ImageIcon;
+
 import com.kanikos.editor.serial.Deserializer;
 import com.kanikos.editor.serial.Serializer;
 
@@ -45,5 +49,18 @@ public class Palette {
 	
 	public void serialize(Serializer serializer) {
 		serializer.writeInts(palette);
+	}
+	
+	public ImageIcon toImageIcon(int index, int dimensions) {
+		BufferedImage image = new BufferedImage(dimensions, dimensions, BufferedImage.TYPE_INT_RGB);
+		image.flush();
+		
+		for(int y = 0; y < dimensions; y++) {
+			for(int x = 0; x < dimensions; x++) {
+				image.setRGB(x, y, palette[index]);
+			}
+		}
+		
+		return new ImageIcon(image);
 	}
 }

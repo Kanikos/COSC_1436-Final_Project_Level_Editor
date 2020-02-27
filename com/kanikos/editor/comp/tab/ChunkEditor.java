@@ -312,7 +312,7 @@ public class ChunkEditor extends Tab {
 				}
 			}
 		}
-		else if(spriteButtons != null) {
+		if(spriteButtons != null) {
 			for(int i = 0; i < spriteButtons.length; i++) {
 				if(src == spriteButtons[i]) {
 					tile.setID((short) i);

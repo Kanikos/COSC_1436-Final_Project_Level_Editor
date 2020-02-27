@@ -25,13 +25,11 @@ public class Spritesheet {
 		length = width * height;
 		sprites = new Sprite[length];
 		
+		
+		int[] spritesheet = image.getRGB(0, 0, image.getWidth(), image.getHeight(), null, 0, image.getWidth());
 		for(int y = 0; y < height; y++) {
-			int yPos = y * Sprite.DIMENSIONS;
-			
 			for(int x = 0; x < width; x++) {
-				int xPos = x * Sprite.DIMENSIONS;
-								
-				sprites[(y * width) + x] = new Sprite(image, image.getWidth(), xPos, yPos);
+				sprites[(y * width) + x] = new Sprite(spritesheet, image.getWidth(), x, y);
 			}
 		}
 	}

@@ -8,12 +8,17 @@ import com.kanikos.editor.serial.Deserializer;
 import com.kanikos.editor.serial.Serializer;
 
 public class Palette {
-	public static final int   LIMIT 		= 4; 
+	public static final int LIMIT = 4;
+	private static final int MASK = 0xFF;
+	private static final int INCREMENT = 0x55;
+	
+	// default palette
+	public static final int ERROR_COLOR = 0xFFFF00FF;
 	public static final int[] GRAY_SCALE 	= {
-			0xFFFFFFFF,
-			0xFF7E7E7E,
-			0xFF3F3F3F,
-			0xFF000000
+			0xFF000000,
+			0xFF555555,
+			0xFFAAAAAA,
+			0xFFFFFFFF
 	};
 	
 	private static int[] palette;
@@ -22,17 +27,24 @@ public class Palette {
 		palette = GRAY_SCALE.clone();
 	}
 	
-	public int colorize(int grayscalePixel) {
-		int colorizedPixel = 0;
+	public int colorize(int grayScale) {
+		int index = (grayScale & MASK) / INCREMENT;
 		
-		for(int i = 0; i < LIMIT; i++) {
-			if(grayscalePixel == GRAY_SCALE[i]) {
-				colorizedPixel = palette[i];
-				break;
-			}
+		if(index < 0 || index > LIMIT) {
+			return ERROR_COLOR;
 		}
 		
-		return colorizedPixel;
+		return palette[index];
+	}
+	
+	public static int getStandardColor(int grayScale) {
+		int index = (grayScale & MASK) / INCREMENT;
+		
+		if(index < 0 || index > LIMIT) {
+			return ERROR_COLOR;
+		}
+		
+		return GRAY_SCALE[index];
 	}
 	
 	public void setColor(int index, int color) {
